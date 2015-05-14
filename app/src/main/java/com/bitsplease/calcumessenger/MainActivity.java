@@ -61,19 +61,10 @@ public class MainActivity extends Activity {
         sendMessage = (Button) findViewById(R.id.send_button);
         listViewMessages = (ListView) findViewById(R.id.list_view_messages);
 
-        senderName = "Mohamed";
-        receiverName = "Samy";
+        senderName = "You";
+        receiverName = "You";
 
         listMessages = new ArrayList<Message>();
-        /*
-        listMessages.add(new Message("Hello", senderName, true));
-        listMessages.add(new Message("Hello yasta 3aml eh", receiverName, false));
-        listMessages.add(new Message("Tmam el7amdllah", senderName, true));
-        listMessages.add(new Message("No one can sniff these messages.", receiverName, false));
-        listMessages.add(new Message("True!", senderName, true));
-        listMessages.add(new Message("Cool!", receiverName, false));
-
-        */
 
         adapter = new MessageListingAdapter(this, listMessages);
         listViewMessages.setAdapter(adapter);
@@ -225,21 +216,33 @@ public class MainActivity extends Activity {
                 Log.w("YES", "HIS PUBLIC KEY = " + pubKey);
 
                 if (key != null) {
-                    String senderGeneratedAES = ((String) input.readObject());
-                    if (senderGeneratedAES.startsWith("-----BEGIN AES KEY-----")) {
-                        Log.w("YES", "TMAM!");
-                        // Remove the first and last lines
-                        senderGeneratedAES = senderGeneratedAES.replace("-----BEGIN AES KEY-----\n", "");
-                        senderGeneratedAES = senderGeneratedAES.replace("-----END AES KEY-----", "");
 
-                        byte[] secretKeyBytes = Base64.decode(senderGeneratedAES.getBytes("utf-8"), 0);
+                    MessageBundle messageBundle = ((MessageBundle) input.readObject());
+                    //if (senderGeneratedAES.startsWith("-----BEGIN AES KEY-----")) {
 
+                    Log.w("YES", "1- PLAIN TEXT = " + messageBundle.getPlainText());
+                    Log.w("YES", "1- SIGNED TEXT = " + messageBundle.getSignedText());
+
+                    boolean isVerified = EncryptionUtil.verifyData(messageBundle.getPlainText(), messageBundle.getSignedText(), key);
+
+                    Log.w("YES", "*_*"+ messageBundle.getPlainText());
+
+                    if (isVerified) {
+                        String receivedAESKey = EncryptionUtil.decryptPrivateKey(messageBundle.getPlainText());
+                        receivedAESKey = receivedAESKey.substring(receivedAESKey.indexOf("-----BEGIN AES KEY-----"));
+
+                        Log.w("YES", "OOH = "+ receivedAESKey);
+                        //displayMessage(new Message(messageBundle.getPlainText(), senderName, false));
+
+                        receivedAESKey = receivedAESKey.replace("-----BEGIN AES KEY-----\n", "");
+                        receivedAESKey = receivedAESKey.replace("-----END AES KEY-----", "");
+                        byte[] secretKeyBytes = Base64.decode(receivedAESKey.getBytes("utf-8"), 0);
                         secretKey = new SecretKeySpec(secretKeyBytes, 0, secretKeyBytes.length, "AES");
-
-                        Log.w("YES", "THE RECEIVED AES SECRET KEY = "+ new String(senderGeneratedAES));
+                        Log.w("YES", "THE RECEIVED AES SECRET KEY = " + new String(receivedAESKey));
+                        return key;
                     }
-                    return key;
                 }
+                //}
             }
 
         } catch (ClassNotFoundException classNotFoundException) {
@@ -255,29 +258,37 @@ public class MainActivity extends Activity {
     private void processConnection() throws IOException
     {
         Log.w("YES", "PROCSSING!!");
-        String message = null;
+        MessageBundle messageBundle = null;
         do
         {
             try
             {
-                message = ( String ) input.readObject();
-                Log.w("YES", "Received + encoded = "+ message);
-                // ObjectInputStream inputStream = null;
-                // Decrypt the cipher text using the private key.
-                //inputStream = new ObjectInputStream(new FileInputStream( ?? ));
-                //final PrivateKey privateKey = (PrivateKey) inputStream.readObject();
-                final String plainText = EncryptionUtil.decrypt(message, EncryptionUtil.getPrivateKey());
+                //get the object that contains the plain text and signed text
+                messageBundle = ( MessageBundle ) input.readObject();
 
-                displayMessage(new Message(plainText, senderName, false));
+                //decrypt its contents using my private key
+                messageBundle.setPlainText(EncryptionUtil.decryptAES(messageBundle.getPlainText(), secretKey));
+                messageBundle.setSignedText(EncryptionUtil.decryptAES(messageBundle.getSignedText(), secretKey));
+
+                //decrypt using his public key and compare hashes
+                Log.w("YES", "1- PLAIN TEXT = " + messageBundle.getPlainText());
+                Log.w("YES", "1- SIGNED TEXT = " + messageBundle.getSignedText());
+
+                boolean isVerified = EncryptionUtil.verifyData(messageBundle.getPlainText(), messageBundle.getSignedText(), senderPublicKey);
+
+                if (isVerified){
+                    displayMessage(new Message(messageBundle.getPlainText(), senderName, false));
+                }
+
             }
             catch ( ClassNotFoundException classNotFoundException ) {
                 Log.w("YES", "ERROR 1");
                 showToast("Unknown object type received");
             } catch (Exception e){
-                //Log.w("YES", "Foo didn't work: " + e.getMessage());
+                // Log.w("YES", "Foo didn't work: " + e.getMessage());
             }
 
-        } while ( !message.equals( "CLIENT>>> TERMINATE" ) );
+        } while (true);
     }
 
     private void closeConnection()

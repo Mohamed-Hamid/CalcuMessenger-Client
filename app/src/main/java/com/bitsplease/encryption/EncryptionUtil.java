@@ -140,7 +140,7 @@ public class EncryptionUtil {
         return result;
     }
 
-    public static boolean verifyData(String input, String signatureStr) throws KeyStoreException,
+    public static boolean verifyData(String input, String signatureStr, PublicKey senderPublicKey) throws KeyStoreException,
             CertificateException, NoSuchAlgorithmException, IOException,
             UnrecoverableEntryException, InvalidKeyException, SignatureException {
         byte[] data = input.getBytes();
@@ -175,7 +175,8 @@ public class EncryptionUtil {
 
         Signature s = Signature.getInstance(SIGNATURE_SHA256withRSA);
 
-        s.initVerify(((KeyStore.PrivateKeyEntry) entry).getCertificate());
+        s.initVerify(senderPublicKey);
+        //s.initVerify(((KeyStore.PrivateKeyEntry) entry).getCertificate());
         s.update(data);
 
         boolean valid = s.verify(signature);
@@ -247,13 +248,13 @@ public class EncryptionUtil {
         return ((KeyStore.PrivateKeyEntry) entry).getCertificate().getPublicKey();
     }
 
-    public static String decrypt(String message, PrivateKey key) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, NoSuchProviderException {
+    public static String decryptPrivateKey(String message) throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, BadPaddingException, IllegalBlockSizeException, NoSuchProviderException, CertificateException, UnrecoverableEntryException, KeyStoreException, IOException {
         byte[] dectyptedText = null;
         byte[] decodedMessage = Base64.decode(message, 0);
         // get an RSA cipher object and print the provider
         Cipher cipher = Cipher.getInstance("RSA/ECB/NoPadding", "AndroidOpenSSL");
         // decrypt the text using the private key
-        cipher.init(Cipher.DECRYPT_MODE, key);
+        cipher.init(Cipher.DECRYPT_MODE, getPrivateKey());
         dectyptedText = cipher.doFinal(decodedMessage);
         return new String(dectyptedText);
     }
