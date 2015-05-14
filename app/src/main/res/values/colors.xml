@@ -1,0 +1,13 @@
+<resources>
+
+    <color name="black_overlay">#66000000</color>
+
+    <color name="background">#1976D2</color>
+    <color name="button">#2196F3</color>
+    <color name="sender">#2196F3</color>
+    <color name="receiver">#e5e7eb</color>
+    <color name="chat_background">#BBDEFB</color>
+    <color name="msg_input">#e8e8e8</color>
+    <color name="actionbar">#1976D2</color>
+
+</resources>

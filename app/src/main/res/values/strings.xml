@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">SecuDroid Client</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_send">Send</string>
+
+    <string name="title_activity_welcome">SecuDroid Client</string>
+    <string name="dummy_button">Dummy Button</string>
+    <string name="dummy_content">DUMMY\nCONTENT</string>
+    <string name="title">Chat, securely.</string>
+    <string name="enter_ip">Server IP address</string>
+    <string name="btn_join">Connect</string>
+    <string name="enter_port">Server Port</string>
+    <string name="btn_send">Send</string>
+</resources>
