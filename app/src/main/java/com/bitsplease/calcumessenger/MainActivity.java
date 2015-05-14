@@ -56,6 +56,16 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        Bundle extras = getIntent().getExtras();
+
+        String givenIp = (String) extras.get("ip");
+        String givenPort = (String) extras.get("port");
+
+        if (!givenIp.equals("") && !givenPort.equals("")){
+            chatServerIP = givenIp;
+            chatServerPort = Integer.parseInt(givenPort);
+        }
+
         //messages = (TextView) findViewById(R.id.messages);
         enterMessage = (EditText) findViewById(R.id.message);
         sendMessage = (Button) findViewById(R.id.send_button);
@@ -91,28 +101,6 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        /*
-        try {
-            String ans = EncryptionUtil.signData(test);
-            boolean right = EncryptionUtil.verifyData(test, ans);
-            Log.w("YES", "*_*"+right);
-        } catch (KeyStoreException e) {
-            e.printStackTrace();
-        } catch (UnrecoverableEntryException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        } catch (SignatureException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (CertificateException e) {
-            e.printStackTrace();
-        }
-        */
 
         Thread cThread = new Thread(new ClientThread());
         cThread.start();
@@ -218,27 +206,30 @@ public class MainActivity extends Activity {
                 if (key != null) {
 
                     MessageBundle messageBundle = ((MessageBundle) input.readObject());
-                    //if (senderGeneratedAES.startsWith("-----BEGIN AES KEY-----")) {
 
                     Log.w("YES", "1- PLAIN TEXT = " + messageBundle.getPlainText());
                     Log.w("YES", "1- SIGNED TEXT = " + messageBundle.getSignedText());
 
+                    //decrypt the recevied input using his public key just received
                     boolean isVerified = EncryptionUtil.verifyData(messageBundle.getPlainText(), messageBundle.getSignedText(), key);
 
                     Log.w("YES", "*_*"+ messageBundle.getPlainText());
 
                     if (isVerified) {
+                        //decrypt the input using my private key
                         String receivedAESKey = EncryptionUtil.decryptPrivateKey(messageBundle.getPlainText());
+
+                        //remove starts and ends
                         receivedAESKey = receivedAESKey.substring(receivedAESKey.indexOf("-----BEGIN AES KEY-----"));
-
-                        Log.w("YES", "OOH = "+ receivedAESKey);
-                        //displayMessage(new Message(messageBundle.getPlainText(), senderName, false));
-
                         receivedAESKey = receivedAESKey.replace("-----BEGIN AES KEY-----\n", "");
                         receivedAESKey = receivedAESKey.replace("-----END AES KEY-----", "");
+
+                        //decode recevied secret key (Just for logging)
                         byte[] secretKeyBytes = Base64.decode(receivedAESKey.getBytes("utf-8"), 0);
                         secretKey = new SecretKeySpec(secretKeyBytes, 0, secretKeyBytes.length, "AES");
                         Log.w("YES", "THE RECEIVED AES SECRET KEY = " + new String(receivedAESKey));
+
+                        //return public key
                         return key;
                     }
                 }
